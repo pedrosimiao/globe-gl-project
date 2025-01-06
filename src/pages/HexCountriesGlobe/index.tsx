@@ -20,33 +20,61 @@ const HexCountriesGlobe = () => {
     const [selectedCountry, setSelectedCountry] = useState<Record<string, any> | null>(null);
     const [countryData, setCountryData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const globeRef = useRef<GlobeMethods | undefined>(undefined);
 
-    // Estado para a largura da janela
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    // Função para determinar o ponto de vista baseado na largura da tela
+    const getPointOfView = useCallback(() => {
+        if (windowWidth < 426) {
+            return { lat: 0, lng: 0, altitude: 4.5 }; // Para dispositivos móveis
+        } else if (windowWidth < 758) {
+            return { lat: 10, lng: 20, altitude: 3.5 }; // Para tablets
+        } else {
+            return { lat: 30, lng: 40, altitude: 2.5 }; // Para desktops
+        }
+    }, [windowWidth]);
+
+    // Atualiza o ponto de vista sempre que getPointOfView rodar
+    useEffect(() => {
+        if (globeRef.current) {
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView);
+        }
+    }, [getPointOfView]);
+
 
     // Atualiza a largura da janela
     const updateWindowWidth = () => {
         setWindowWidth(window.innerWidth);
     };
 
-    // Função para determinar o ponto de vista baseado na largura da tela
-    const getPointOfView = useCallback(() => {
-        if (windowWidth < 758) {
-            return { lat: 0, lng: 0, altitude: 4 }; // Para dispositivos móveis
-        } else if (windowWidth < 1024) {
-            return { lat: 10, lng: 20, altitude: 2.5 }; // Para tablets
-        } else {
-            return { lat: 30, lng: 40, altitude: 2.5 }; // Para desktops
-        }
-    }, [windowWidth]);
 
+    // Função pós montagem
+    const onGlobeReady = () => {
+        if (globeRef.current) {
+            const controls = globeRef.current.controls();
+
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1;
+
+            if (countries) {
+                globeRef.current.resumeAnimation();
+            } else {
+                globeRef.current.pauseAnimation();
+            }
+
+            // Ajusta o ponto de vista na inicialização
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView, 1000);
+        }
+    };
+
+
+    // Listener para redimensionamento da janela
     useEffect(() => {
         window.addEventListener('resize', updateWindowWidth);
-        return () => {
-            window.removeEventListener('resize', updateWindowWidth);
-        };
+        return () => window.removeEventListener('resize', updateWindowWidth);
     }, []);
 
 
@@ -58,6 +86,7 @@ const HexCountriesGlobe = () => {
         }
         return null;
     };
+
 
     const handlePolygonClick = (polygon: any) => {
         const isSelected = selectedCountry?.properties?.ADMIN === polygon.properties.ADMIN;
@@ -78,12 +107,13 @@ const HexCountriesGlobe = () => {
 
             setTimeout(() => {
                 globeRef.current?.pointOfView(
-                    { lat, lng, altitude: 2 },
+                    { lat, lng, altitude: getPointOfView().altitude - 0.5 },
                     1000
                 );
             }, 100);
         }
     };
+
 
     const getHexColorForCountry = (country: any) => {
         const index = country.properties.ISO_A3.charCodeAt(0) % colors.length;
@@ -97,7 +127,7 @@ const HexCountriesGlobe = () => {
             if (coordinates) {
                 const [lng, lat] = coordinates;
                 globeRef.current?.pointOfView(
-                    { lat, lng, altitude: 2 },
+                    { lat, lng, altitude: getPointOfView().altitude - 0.5 },
                     1000
                 );
             }
@@ -106,8 +136,9 @@ const HexCountriesGlobe = () => {
         }
     }, [selectedCountry, getPointOfView]);
 
+
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 5000);
+        const timer = setTimeout(() => setIsLoading(false), 3000);
         return () => clearTimeout(timer);
     }, []);
 
@@ -145,7 +176,7 @@ const HexCountriesGlobe = () => {
                 hexPolygonResolution={3}
                 hexPolygonMargin={0.1}
                 hexPolygonColor={getHexColorForCountry}
-                hexPolygonAltitude={(d) => (d === selectedCountry ? 0.12 : 0.001)}
+                hexPolygonAltitude={(d) => (d === selectedCountry ? 0.12 : 0.002)}
                 hexPolygonLabel={(d: any) => ` 
                 <b>${d.properties.ADMIN}</b><br />
                 ISO_A3: ${d.properties.ISO_A3}<br />
@@ -153,6 +184,7 @@ const HexCountriesGlobe = () => {
             `}
                 onHexPolygonClick={handlePolygonClick}
                 showAtmosphere={true}
+                onGlobeReady={onGlobeReady}
             />
         </>
     )

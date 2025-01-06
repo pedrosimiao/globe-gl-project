@@ -16,16 +16,16 @@ const GlobalStyle = createGlobalStyle`
         padding: 0;
         background-color: #000011;
         color: white; /* Define a cor do texto, se necessário */
+        width: 100%;
         height: 100vh;
         cursor: default;
+        user-select: none;
+
     }
 
     canvas {
         cursor: auto;
-    }
-
-    body, canvas {
-        user-select: auto;
+        user-select: none;
     }
 `;
 

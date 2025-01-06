@@ -9,39 +9,70 @@ import CountryCard from '../../components/CountryCard';
 
 const ChoroplethCountriesGlobe = () => {
     const { countries, jsonData, loading, error } = useCountryContext()
-
     const [selectedCountry, setSelectedCountry] = useState<Record<string, any> | null>(null);
     const [countryData, setCountryData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-
     const globeRef = useRef<GlobeMethods | undefined>(undefined);
-
-
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
 
+    // Função para determinar o ponto de vista baseado na largura da tela
+    const getPointOfView = useCallback(() => {
+        if (windowWidth < 426) {
+            return { lat: 0, lng: 0, altitude: 4.5 }; // Para dispositivos móveis
+        } else if (windowWidth < 758) {
+            return { lat: 10, lng: 20, altitude: 3.5 }; // Para tablets
+        } else {
+            return { lat: 30, lng: 40, altitude: 2.5 }; // Para desktops
+        }
+    }, [windowWidth]);
+
+
+    // Atualiza a largura da janela ao redimensionar
     const updateWindowWidth = () => {
         setWindowWidth(window.innerWidth);
     };
 
 
-    const getPointOfView = useCallback(() => {
-        if (windowWidth < 758) {
-            return { lat: 0, lng: 0, altitude: 4 }; // Para dispositivos móveis
-        } else if (windowWidth < 1024) {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Para tablets
-        } else {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Para desktops
+    // Função pós montagem
+    const onGlobeReady = () => {
+        if (globeRef.current) {
+            const controls = globeRef.current.controls();
+
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1;
+
+            if (countries) {
+                globeRef.current.resumeAnimation();
+            } else {
+                globeRef.current.pauseAnimation();
+            }
+
+            // Ajusta o ponto de vista na inicialização
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView, 1000);
         }
-    }, [windowWidth]);
+    };
 
 
+    // Listener para redimensionamento da janela
     useEffect(() => {
         window.addEventListener('resize', updateWindowWidth);
         return () => {
             window.removeEventListener('resize', updateWindowWidth);
         };
     }, []);
+
+
+    // Atualiza o ponto de vista sempre que getPointOfView rodar
+    useEffect(() => {
+        if (globeRef.current) {
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView);
+        }
+    }, [getPointOfView]);
+
+
 
     const getCountryCenter = (geometry: any) => {
         if (geometry.type === 'Polygon') {
@@ -51,6 +82,7 @@ const ChoroplethCountriesGlobe = () => {
         }
         return null;
     };
+
 
     const handlePolygonClick = (polygon: any) => {
         const isSelected = selectedCountry?.properties?.ADMIN === polygon.properties.ADMIN;
@@ -70,12 +102,13 @@ const ChoroplethCountriesGlobe = () => {
 
             setTimeout(() => {
                 globeRef.current?.pointOfView(
-                    { lat, lng, altitude: 2 },
+                    { lat, lng, altitude: getPointOfView().altitude - 0.5 },
                     1000
                 );
             }, 100);
         }
     };
+
 
     useEffect(() => {
         if (selectedCountry) {
@@ -83,7 +116,7 @@ const ChoroplethCountriesGlobe = () => {
             if (coordinates) {
                 const [lng, lat] = coordinates;
                 globeRef.current?.pointOfView(
-                    { lat, lng, altitude: 2 },
+                    { lat, lng, altitude: getPointOfView().altitude - 0.5 },
                     1000
                 );
             }
@@ -92,11 +125,13 @@ const ChoroplethCountriesGlobe = () => {
         }
     }, [selectedCountry, getPointOfView]);
 
+
     useEffect(() => {
         // Simula o carregamento do globe
         const timer = setTimeout(() => setIsLoading(false), 5000); // Ajuste o tempo para o carregamento real
         return () => clearTimeout(timer); // Limpeza do timeout
     }, []);
+
 
     if (loading) {
         return (
@@ -138,6 +173,7 @@ const ChoroplethCountriesGlobe = () => {
                 polygonLabel={(d: any) => `<b>${d.properties.ADMIN} (${d.properties.ISO_A3})</b>`}
                 onPolygonClick={handlePolygonClick}
                 polygonsTransitionDuration={100}
+                onGlobeReady={onGlobeReady}
             />
         </>
     );

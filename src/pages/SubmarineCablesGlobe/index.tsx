@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import Globe, { GlobeMethods } from "react-globe.gl";
 
-import CableContext from "../../contexts/CableContext"; // Importando o contexto
+import CableContext from "../../contexts/CableContext";
 
 import Loader from "../../components/Loader";
 
@@ -14,36 +14,49 @@ const SubmarineCablesGlobe = () => {
     const [windowWidth, setWindowWidth] = useState(window.innerWidth); // Estado para largura da janela
 
 
+    // Função para determinar o ponto de vista baseado na largura da tela
+    const getPointOfView = useCallback(() => {
+        if (windowWidth < 426) {
+            return { lat: 0, lng: 0, altitude: 4.5 }; // Para dispositivos móveis
+        } else if (windowWidth < 758) {
+            return { lat: 10, lng: 20, altitude: 3.5 }; // Para tablets
+        } else {
+            return { lat: 30, lng: 40, altitude: 2.5 }; // Para desktops
+        }
+    }, [windowWidth]);
+
+
     // Atualiza a largura da janela ao redimensionar
     const updateWindowWidth = () => {
         setWindowWidth(window.innerWidth);
     };
 
+    // Função pós montagem
+    const onGlobeReady = () => {
+        if (globeRef.current) {
+            const controls = globeRef.current.controls();
 
-    // Determina o ponto de vista (lat, lng, altitude) baseado na largura da janela
-    const getPointOfView = useCallback(() => {
-        if (windowWidth < 758) {
-            return { lat: 0, lng: 0, altitude: 4 }; // Ponto de vista para dispositivos móveis
-        } else if (windowWidth < 1024) {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Ponto de vista para tablets
-        } else {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Ponto de vista para desktops
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1;
+
+            if (cablePaths) {
+                globeRef.current.resumeAnimation();
+            } else {
+                globeRef.current.pauseAnimation();
+            }
+
+            // Ajusta o ponto de vista na inicialização
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView);
         }
-    }, [windowWidth]); // Depende da largura da janela
-
-    useEffect(() => {
-        if (globeRef.current && globeRef.current.controls()) {
-            globeRef.current.controls().autoRotate = true;
-            globeRef.current.controls().autoRotateSpeed = 1;
-        }
-    }, []);
+    };
 
 
-    // Atualiza o ponto de vista e ativa autoRotate sempre que windowWidth mudar
+    // Atualiza o ponto de vista sempre que getPointOfView rodar
     useEffect(() => {
         if (globeRef.current) {
             const pointOfView = getPointOfView();
-            globeRef.current.pointOfView(pointOfView, 3000); // Atualiza a visão do globo em 3 segundos
+            globeRef.current.pointOfView(pointOfView); // Atualiza a visão do globo em 3 segundos
         }
     }, [getPointOfView]);
 
@@ -61,13 +74,6 @@ const SubmarineCablesGlobe = () => {
             setIsLoading(false); // Para o carregamento quando os dados estão disponíveis
         }
     }, [cablePaths]);
-
-
-    // Simula um tempo de carregamento adicional para o globo
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 5000);
-        return () => clearTimeout(timer); // Limpa o timeout ao desmontar
-    }, []);
 
 
     if (isLoading) return <Loader />; // Exibe o loader enquanto carrega
@@ -88,6 +94,7 @@ const SubmarineCablesGlobe = () => {
             pathDashGap={0.008} // Espaço entre os traços
             pathDashAnimateTime={12000} // Tempo de animação dos traços
             showAtmosphere={true} // Exibe a atmosfera ao redor do globo
+            onGlobeReady={onGlobeReady}
         />
     );
 };

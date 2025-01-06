@@ -1,41 +1,59 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useCountryContext } from '../../contexts/CountryContext';
-
 import Globe from 'react-globe.gl';
 import type { GlobeMethods } from 'react-globe.gl';
+
+import { useCountryContext } from '../../contexts/CountryContext';
 
 import TopLabel from '../../components/TopLabel';
 import Loader from '../../components/Loader';
 
 const CountriesPopulationGlobe = () => {
-    const [isLoading, setIsLoading] = useState(true);
-    const { countries, loading, error } = useCountryContext()
-    const globeRef = useRef<GlobeMethods | undefined>(undefined);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [isLoading, setIsLoading] = useState(true); // Estado para gerenciar carregamento
+    const { countries, loading, error } = useCountryContext() // Dados dos cabos, obtidos do contexto
+    const globeRef = useRef<GlobeMethods | undefined>(undefined); // Referência para o componente Globe
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth); // Estado para largura da janela
 
+
+    // Função para determinar o ponto de vista baseado na largura da tela
+    const getPointOfView = useCallback(() => {
+        if (windowWidth < 426) {
+            return { lat: 0, lng: 0, altitude: 4.5 }; // Para dispositivos móveis
+        } else if (windowWidth < 758) {
+            return { lat: 10, lng: 20, altitude: 3.5 }; // Para tablets
+        } else {
+            return { lat: 30, lng: 40, altitude: 2.5 }; // Para desktops
+        }
+    }, [windowWidth]);
+
+
+    // Atualiza a largura da janela ao redimensionar
     const updateWindowWidth = () => {
         setWindowWidth(window.innerWidth);
     };
 
-    const getPointOfView = useCallback(() => {
-        if (windowWidth < 758) {
-            return { lat: 0, lng: 0, altitude: 4 }; // Para dispositivos móveis
-        } else if (windowWidth < 1024) {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Para tablets
-        } else {
-            return { lat: 0, lng: 0, altitude: 2.5 }; // Para desktops
-        }
-    }, [windowWidth]);
+    // Função pós montagem
+    const onGlobeReady = () => {
+        if (globeRef.current) {
+            const controls = globeRef.current.controls();
 
-    useEffect(() => {
-        if (globeRef.current && globeRef.current.controls()) {
-            globeRef.current.controls().autoRotate = true;
-            globeRef.current.controls().autoRotateSpeed = 1;
-        }
-    }, []);
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1;
 
-    // Configuração de pointOfView
+            if (countries) {
+                globeRef.current.resumeAnimation();
+            } else {
+                globeRef.current.pauseAnimation();
+            }
+
+            // Ajusta o ponto de vista na inicialização
+            const pointOfView = getPointOfView();
+            globeRef.current.pointOfView(pointOfView);
+        }
+    };
+
+
+    // Atualiza o ponto de vista sempre que getPointOfView rodar
     useEffect(() => {
         if (globeRef.current) {
             const pointOfView = getPointOfView();
@@ -44,23 +62,25 @@ const CountriesPopulationGlobe = () => {
     }, [getPointOfView]);
 
 
+    // Listener para redimensionamento da janela
     useEffect(() => {
         window.addEventListener("resize", updateWindowWidth);
         return () => window.removeEventListener("resize", updateWindowWidth);
     }, [windowWidth]);
 
 
-    // Simula o carregamento do globe
+    // Define o estado de carregamento com base nos dados de países
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 5000); // Ajuste o tempo para o carregamento real
-        return () => clearTimeout(timer); // Limpeza do timeout
-    }, []);
+        if (countries && countries.length > 0) {
+            setIsLoading(false); // Para o carregamento quando os dados estão disponíveis
+        }
+    }, [countries]);
 
 
     if (loading) {
         return (
             <TopLabel>
-                Carregando países...
+                Carregando...
             </TopLabel>
         )
     }
@@ -71,7 +91,9 @@ const CountriesPopulationGlobe = () => {
         </TopLabel>
     }
 
-    return isLoading ? <Loader /> : (
+    if (isLoading) return <Loader />
+
+    return (
         <Globe
             ref={globeRef}
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
@@ -84,11 +106,11 @@ const CountriesPopulationGlobe = () => {
                 const normalizedAltitude = Math.sqrt(pop) * 2e-5; // Fator de normalização reduzido
                 return Math.min(10, Math.max(0.1, normalizedAltitude)); // Teto máximo de 10
             }}
-
             polygonLabel={({ properties: d }: any) => `
-            <b>${d.ADMIN} (${d.ISO_A2})</b> <br />
-            Population: <i>${Math.round(+d.POP_EST / 1e4) / 1e2}M</i>
-        `}
+                <b>${d.ADMIN} (${d.ISO_A2})</b> <br />
+                Population: <i>${Math.round(+d.POP_EST / 1e4) / 1e2}M</i>
+            `}
+            onGlobeReady={onGlobeReady}
         />
     );
 };

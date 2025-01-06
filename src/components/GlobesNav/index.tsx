@@ -23,7 +23,7 @@ const GlobesNav = () => {
       <Nav $isOpen={isOpen}>
         <List>
           <ListItem>
-            <StyledLink to="/" onClick={handleLinkClick}>Submarine Cables</StyledLink>
+            <StyledLink to="/" onClick={handleLinkClick}>Home</StyledLink>
           </ListItem>
           <ListItem>
             <StyledLink to="/choropleth-countries" onClick={handleLinkClick}>
