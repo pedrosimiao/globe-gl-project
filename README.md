@@ -1,3 +1,34 @@
+# Custom 3D Globes  
+
+
+*Custom 3D Globes* é uma aplicação web interativa que utiliza dados geoespaciais para estilizar e manipular globos 3D, proporcionando uma maneira única de explorar e visualizar informações globais. A aplicação permite interações dinâmicas com países, exibe redes de internet submarinas e índices populacionais, representando visualmente dados como a altura dos países em relação ao globo.
+
+## 📖 Sobre o Projeto  
+Desenvolvida para a Reifier, a aplicação utiliza **React** e **globe.gl** para criar uma experiência imersiva e interativa. O design é moderno e focado na usabilidade, permitindo que o usuário explore quatro globos customizados, cada um com diferentes conjuntos de dados interativos. A plataforma é totalmente responsiva, garantindo uma navegação fluida tanto em dispositivos móveis quanto em desktop.
+
+## 🚀 Tecnologias Utilizadas  
+Este projeto foi desenvolvido utilizando as seguintes tecnologias:
+
+- **React** - Biblioteca JavaScript para a construção de interfaces de usuário interativas.
+- **globe.gl** - Biblioteca para a criação de globos 3D interativos com dados geoespaciais.
+- **Styled-components** - Biblioteca para estilização de componentes com CSS-in-JS.
+- **TypeScript** - Superset do JavaScript que adiciona tipos estáticos para maior segurança no código.
+- **Vercel** - Para hospedagem do projeto.
+
+## ✨ Funcionalidades
+
+- **Exploração de Dados Geoespaciais**: Interaja com globos 3D dinâmicos exibindo redes de cabos submarinos, índices populacionais e outros dados geoespaciais.
+- **Menu Intuitivo**: Navegue por quatro globos customizados e interativos, com visualizações de dados específicos.
+- **Responsividade**: O design é adaptado para garantir uma experiência fluida em dispositivos móveis e desktop.
+- **Design Imersivo**: Animações dinâmicas para facilitar a exploração de dados geoespaciais e uma interface visualmente impactante.
+
+🌐 **Links**  
+- **Vercel**: [https://globe-gl-project.vercel.app/](https://globe-gl-project.vercel.app/)  
+- **GitHub**: [https://github.com/pedrosimiao/globe-gl-project](https://github.com/pedrosimiao/globe-gl-project)
+
+---
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
